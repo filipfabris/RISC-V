@@ -1,0 +1,173 @@
+;        AUIPC X1,%pcrel_hi(GPIO)       ;DODAVANJE PREKO ADRESE
+;        ADDI X1,X1,%pcrel_lo(GPIO)
+;        LW X4, 0(X1)
+
+;        lui sp , %hi(0x10000)
+;        ADDI sp, sp, %lo(0X10000)
+
+
+        lui X1, %hi(0xFFFF0F00) ;X1 ADRESA GPIO-A
+        addi X1,X1,%lo(0xFFFF0F00)
+
+        LUI X2, %HI(0xFF) ;X2 VRIJEDNOST KRAJNJEG PODATKA
+        ADDI X2, X2, %LO(0xFF)
+
+        ADDI X3, X3, 0x500 ;X3 POCETAK BLOKA
+
+        ADDI X5, X5, 1  ;X5 VRIJEDNOST 1
+        ;X0 VRIJEDNOST 0
+        ;A4 REGISTAR ZA ZASTAVICE
+        ;A5 REGISTAR ZA ZASTAVICE
+        ;S2 REGISAR ZA POZIV POTPROGRAMA IZ MAINA
+        ;S3 REGISTAR ZA ZNAK RIMSKOG SLOVA
+        ;S4 REGISTAR ZA POZIVE U POTPROGRAMU
+        ;S5 REGISTAR SA -1 KONSTANTOM ZA PROVJERU KRAJA PETLJE
+        ;S6 REGISTAR ZA KONSTANTE
+        ADDI S5, S5, -1
+
+        
+        
+        
+       
+PETLJA   LW A0, 0(X3) ; ucitavanje podatka prvog bloka    U X3 JE ADRESA BLOKA
+         JAL S2, PRETVORI       ;prvo sam implementirao da imamo blok arapskih brojeva
+                                ;kasnije sam skuzio da se radi o samo jednom broju        
+KRAJ    HALT
+       
+PRETVORI  ADDI S3,x0,0x0D ;OCISTI REGISTRE LCD EKRANA
+          JAL S4 , LCDWR
+
+C_P      SLTI A4,A0, 100
+         BNE A4,X5, C
+
+xc_p    AND S6, X0, X0
+        ADDI S6, S6, 90
+        BGE A0, S6, xc   
+          
+L_P      SLTI A4, A0, 50
+         BNE A4,X5, L
+
+xl_p    AND S6, X0, X0
+        ADDI S6, S6, 40
+        BGE A0, S6, xl    
+
+                
+X_P      SLTI A4, A0, 10
+         BNE A4,X5, X
+
+ix_P     AND S6, X0, X0
+         ADDI S6, S6, 9
+         BEQ A0, S6, ix  
+
+        
+
+V_P     SLTI A4, A0, 5
+        BNE A4,X5, V
+
+IV_P    SLTI A4, A0, 4
+        BNE A4, X5, IV
+
+I_P     SLTI A4, A0, 4
+        BEQ A4, X5, I
+                       
+
+FINITO  AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x0A ;LF  ;DODAJ ISPIS NA EKRAN LF
+        JAL S4, LCDWR
+        JALR X0, 0(S2)
+                
+
+
+C       ADDI A0 ,A0, -100
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x43 ;CHAR VELIKO C
+        JAL S4, LCDWR
+        BEQ X0,X0, C_P
+
+xc      ADDI A0 ,A0, -90
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x58 ;CHAR VELIKO X
+        JAL S4, LCDWR
+
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x43 ;CHAR VELIKO C
+        JAL S4, LCDWR
+        BEQ X0,X0, xc_p
+
+L       ADDI A0 ,A0, -50
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x4C ;CHAR VELIKO L
+        JAL S4, LCDWR
+        BEQ X0,X0, L_P
+
+X       ADDI A0 ,A0, -10
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x58 ;CHAR VELIKO X
+        JAL S4, LCDWR
+        BEQ X0,X0, X_P
+
+ix       ADDI A0 ,A0, -9
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x49 ;CHAR VELIKO I
+        JAL S4, LCDWR
+
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x58 ;CHAR VELIKO X
+        JAL S4, LCDWR
+        BEQ X0,X0, ix_p
+
+xl      ADDI A0 ,A0, -40
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x58 ;CHAR VELIKO x
+        JAL S4, LCDWR
+
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x4C ;CHAR VELIKO X
+        JAL S4, LCDWR
+        BEQ X0,X0, xl_p
+
+        
+
+V       ADDI A0 ,A0, -5
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x56 ;CHAR VELIKO V
+        JAL S4, LCDWR
+        BEQ X0,X0, V_P
+
+IV      ADDI A0 ,A0, -4
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x49 ;CHAR VELIKO I
+        JAL S4, LCDWR
+      
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x56 ;CHAR VELIKO V
+        JAL S4, LCDWR
+        BEQ X0,X0, IV_P
+
+I       ADDI  A0 ,A0, -1
+        BEQ A0, S5, FINITO ;PROVJERA KRAJA POTPROGRAMA
+        
+        AND S3, S3, X0 ;RESETIRANJE S3 NA 0
+        ADDI S3, S3, 0x49 ;CHAR VELIKO I
+        JAL S4, LCDWR
+        BEQ X0,X0, I_P   
+        
+
+LCDWR   ANDI S3,S3,0x7F ;postavi bit 7 u nulu
+        
+        SB S3, 4(X1)
+        ORI S3,S3,0x80 ;postavi bit 7 u jedan
+        
+        SB S3, 4(X1)
+        ANDI S3,S3,0x7F ;postavi bit 7 u nulu
+        
+        SB S3, 4(X1)
+        JALR X0, 0(S4)
+
+
+
+;GPIO   DW 0xFFFF0F00   #ADRESA GPIO
+
+        ORG 0x500
+PODATCI DW 90
+
